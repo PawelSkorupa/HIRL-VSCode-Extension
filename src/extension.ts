@@ -36,10 +36,10 @@ class HirlLinter {
         }
 
         // These are diagnostic messages for this file
-        let diagnostics : vscode.Diagnostic[] = [];
+        let diagnostics: vscode.Diagnostic[] = [];
 
         // Compiler arguments
-        let compilerArguments = [doc.fileName];
+        let compilerArguments = ["--json-report", doc.fileName];
 
         // Spawn the compiler process
         let compilerProcess = cp.spawn(
@@ -58,8 +58,11 @@ class HirlLinter {
             compilerProcess.stdout.on("close", () =>
             {
                 //let lines = compilerOutput.toString( ).split( /(?:\r\n|\r|\n)/g );
-                let compilerMessages = compilerOutput.toString().split('\n').map((message) => JSON.parse(message));
+                let compilerMessages = compilerOutput.toString()
+                    .split('\n').filter((message) => message.length > 0)
+                    .map((message) => JSON.parse(message));
 
+                console.log(compilerMessages);
                 // Run analysis for each output line
                 compilerMessages.forEach(compilerMessage =>
                 {
@@ -76,8 +79,8 @@ class HirlLinter {
                     // Hint severity is used as "no error" here
                     if (severity !== vscode.DiagnosticSeverity.Hint)
                     {
-                        let startPosition = doc.positionAt(compilerMessage.labels.span.offset);
-                        let endPosition = doc.positionAt(compilerMessage.labels.span.offset + compilerMessage.labels.span.length);
+                        let startPosition = doc.positionAt(compilerMessage.labels[0].span.offset);
+                        let endPosition = doc.positionAt(compilerMessage.labels[0].span.offset + compilerMessage.labels[0].span.length);
 
                         // Create a diagnostic message
                         let where = new vscode.Range(
@@ -89,11 +92,11 @@ class HirlLinter {
                         let diag = new vscode.Diagnostic(where, compilerMessage.message, severity);
                         diagnostics.push(diag);
                     }
-                } );
+                });
 
                 // After the output is processed, push the new diagnostics to collection
                 this.diagnosticsCollection.set(doc.uri, diagnostics);
-            } );
+            });
         }
         else {
             vscode.window.showErrorMessage("HIRL Extension: failed to run HIRL compiler!");
@@ -121,8 +124,8 @@ class HirlLinterController
         let subscriptions: vscode.Disposable[] = [];
 
         // Linter triggers
-        vscode.workspace.onDidOpenTextDocument( this.lintTrigger, this, subscriptions );
-        vscode.workspace.onDidSaveTextDocument( this.lintTrigger, this, subscriptions );
+        vscode.workspace.onDidOpenTextDocument(this.lintTrigger, this, subscriptions);
+        vscode.workspace.onDidSaveTextDocument(this.lintTrigger, this, subscriptions);
 
         this._disposable = vscode.Disposable.from(...subscriptions);
     }
