@@ -14,7 +14,15 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(linterController);
 }
 
-export function deactivate() {}
+export function deactivate() { }
+
+interface messageLabel {
+    label: string;
+    span: {
+        offset: number;
+        length: number;
+    };
+}
 
 // Performs HIRL language linting
 class HirlLinter {
@@ -79,18 +87,21 @@ class HirlLinter {
                     // Hint severity is used as "no error" here
                     if (severity !== vscode.DiagnosticSeverity.Hint)
                     {
-                        let startPosition = doc.positionAt(compilerMessage.labels[0].span.offset);
-                        let endPosition = doc.positionAt(compilerMessage.labels[0].span.offset + compilerMessage.labels[0].span.length);
+                        compilerMessage.labels.forEach((label: messageLabel) => {
+                            let startPosition = doc.positionAt(label.span.offset);
+                            let endPosition = doc.positionAt(label.span.offset + label.span.length);
 
-                        // Create a diagnostic message
-                        let where = new vscode.Range(
-                            startPosition.line,
-                            startPosition.character,
-                            endPosition.line,
-                            endPosition.character
-                        );
-                        let diag = new vscode.Diagnostic(where, compilerMessage.message, severity);
-                        diagnostics.push(diag);
+                            // Create a diagnostic message
+                            let where = new vscode.Range(
+                                startPosition.line,
+                                startPosition.character,
+                                endPosition.line,
+                                endPosition.character
+                            );
+    
+                            let diag = new vscode.Diagnostic(where, compilerMessage.message + "\n" + label.label, severity);
+                            diagnostics.push(diag);
+                        });
                     }
                 });
 
