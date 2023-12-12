@@ -1,0 +1,63 @@
+{
+  "scopeName": "source.hirl",
+  "fileTypes": ["hirl"],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#constants"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.hirl",
+          "begin": "//",
+          "end": "\n"
+        },
+        {
+          "name": "comment.block.hirl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.hirl",
+          "match": "\\b(module|if|for|in|else|default|impl|enum|unused|tristate|register|super|root|package|use|cond|match)\\b"
+        },
+        {
+          "name": "storage.type.hirl",
+          "match": "\\b(wire|auto|bus|ubus|sbus|int|uint|bool|input|output)\\b"
+        },
+        {
+          "name": "storage.modifier.hirl",
+          "match": "\\b(clock|sync|comb|async|const|signed|unsigned)\\b"
+        },
+        {
+          "name": "keyword.operator.hirl",
+          "match": "(?:[=~!\\|\\&\\^><\\?\\:+\\-/\\*\\%]|>>|<<|>=|<=|!=|==|&&|=>|\\|\\||\\+\\:|\\:\\:|\\:<)"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hirl",
+          "match": "[0-9][a-zA-Z0-9_]"
+        },
+        {
+          "name": "constant.language.hirl",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    }
+  }
+}

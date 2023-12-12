@@ -35,6 +35,11 @@
             "aliases": ["hirl"],
             "extensions": [".hirl"],
             "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "hirl",
+            "scopeName": "source.hirl",
+            "path": "./syntaxes/hirl.tmLanguage.json"
         }]
     },
     "scripts": {
