@@ -10,6 +10,9 @@
     },
     {
       "include": "#constants"
+    },
+    {
+      "include": "#special-register-inputs"
     }
   ],
   "repository": {
@@ -31,7 +34,7 @@
       "patterns": [
         {
           "name": "keyword.control.hirl",
-          "match": "\\b(module|if|for|in|else|default|impl|enum|unused|tristate|register|super|root|package|use|cond|match)\\b"
+          "match": "\\b(module|if|for|in|else|default|impl|unused|register|super|root|package|use|cond|match)\\b"
         },
         {
           "name": "storage.type.hirl",
@@ -44,6 +47,14 @@
         {
           "name": "keyword.operator.hirl",
           "match": "(?:[=~!\\|\\&\\^><\\?\\:+\\-/\\*\\%]|>>|<<|>=|<=|!=|==|&&|=>|\\|\\||\\+\\:|\\:\\:|\\:<)"
+        },
+        {
+          "name": "entity.name.function.hirl",
+          "match": "\\b(min|max|trunc|ext|sext|zext|zeros|ones|join|rep|fold_or|fold_and|fold_xor)\\b"
+        },
+        {
+          "name": "invalid.illegal.hirl",
+          "match": "\\b(tristate|enum)\\b"
         }
       ]
     },
@@ -51,11 +62,19 @@
       "patterns": [
         {
           "name": "constant.numeric.hirl",
-          "match": "[0-9][a-zA-Z0-9_]"
+          "match": "[0-9][a-zA-Z0-9_]*"
         },
         {
           "name": "constant.language.hirl",
           "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "special-register-inputs": {
+      "patterns": [
+        {
+          "name": "markup.underline.hirl",
+          "match": "\\b(clk|next|en|nreset|data)\\b"
         }
       ]
     }
