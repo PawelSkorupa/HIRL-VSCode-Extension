@@ -2,8 +2,8 @@
     "name": "vscode-hirl-extension",
     "displayName": "HIRL Extension",
     "description": "Provides some language extension capabilities for HIRL",
-    "version": "1.2.0",
-    "publisher": "Paweł Skorupa",
+    "version": "1.1.0",
+    "publisher": "pawesko169",
     "engines": {
         "vscode": "^1.28.0"
     },
@@ -27,20 +27,34 @@
                     "type": "string",
                     "default": null,
                     "description": "Specifies path to the HIRL compiler"
+                },
+                "hirl-extension.tabSize": {
+                    "type": "number",
+                    "default": 2,
+                    "enum": [2, 4],
+                    "description": "Specifies the size of the indentation for the formatter"
                 }
             }
         },
-        "languages": [{
-            "id": "hirl",
-            "aliases": ["hirl"],
-            "extensions": [".hirl"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "hirl",
-            "scopeName": "source.hirl",
-            "path": "./syntaxes/hirl.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "hirl",
+                "aliases": [
+                    "hirl"
+                ],
+                "extensions": [
+                    ".hirl"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "hirl",
+                "scopeName": "source.hirl",
+                "path": "./syntaxes/hirl.tmLanguage.json"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -50,10 +64,11 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^2.6.1",
-        "vscode": "^1.1.21",
-        "tslint": "^5.8.0",
+        "@types/mocha": "^2.2.42",
         "@types/node": "7.0.7",
-        "@types/mocha": "^2.2.42"
+        "prettier": "^3.1.1",
+        "tslint": "^5.8.0",
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.21"
     }
 }
