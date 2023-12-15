@@ -5,11 +5,9 @@ import * as cp from 'child_process';
 export function activate(context: vscode.ExtensionContext) {
     console.log("HIRL extension is now active");
 
-    // Create a linter class instance and its controller
     let linter = new HirlLinter();
     let linterController = new HirlLinterController(linter);
 
-    // Register the linter
     context.subscriptions.push(linter);
     context.subscriptions.push(linterController);
 
@@ -46,7 +44,8 @@ export function activate(context: vscode.ExtensionContext) {
             
                 if (trimmedLine.replace(new RegExp('\\)', 'g'), '')
                     .replace(new RegExp('\\}', 'g'), '')
-                    .replace(new RegExp('\\]', 'g'), '') === '') {
+                    .replace(new RegExp('\\]', 'g'), '')
+                    .replace(new RegExp('\\;', 'g'), '') === '') {
                     desiredIndentation = desiredIndentation.substring(0, desiredIndentation.length - tabSize);
                 }
                 const editText = desiredIndentation + trimmedLine;
@@ -72,7 +71,6 @@ interface messageLabel {
     };
 }
 
-// Performs HIRL language linting
 class HirlLinter {
     private diagnosticsCollection: vscode.DiagnosticCollection;
 
@@ -80,49 +78,38 @@ class HirlLinter {
         this.diagnosticsCollection = vscode.languages.createDiagnosticCollection();
     }
 
-    // Does the actual linting
     public lint(doc: vscode.TextDocument) {
-        // if (doc.languageId !== "hirl") return;
+        if (doc.languageId !== "hirl") return;
 
-        // Get configuration
         const config = vscode.workspace.getConfiguration("hirl-extension");
         if (config.compilerPath === null || config.compilerPath === "") {
             vscode.window.showErrorMessage( "HIRL Extension: hirl-extension.compilerPath must be set!" );
             return;
         }
 
-        // These are diagnostic messages for this file
         let diagnostics: vscode.Diagnostic[] = [];
 
-        // Compiler arguments
         let compilerArguments = ["--json-report", doc.fileName];
 
-        // Spawn the compiler process
         let compilerProcess = cp.spawn(
             config.compilerPath,
             compilerArguments,
             {}
         );
 
-        // If the validator is running
         if (compilerProcess.pid)
         {
             let compilerOutput = "";
             compilerProcess.stdout.on("data", (data: Buffer) => compilerOutput += data);
 
-            // When validator finishes its job (closes stream)
             compilerProcess.stdout.on("close", () =>
             {
-                //let lines = compilerOutput.toString( ).split( /(?:\r\n|\r|\n)/g );
                 let compilerMessages = compilerOutput.toString()
                     .split('\n').filter((message) => message.length > 0)
                     .map((message) => JSON.parse(message));
 
-                console.log(compilerMessages);
-                // Run analysis for each output line
                 compilerMessages.forEach(compilerMessage =>
                 {
-                    // Determine the severity of the error
                     let severity : vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Hint;
                     if (compilerMessage.severity === "error") {
                         severity = vscode.DiagnosticSeverity.Error;
@@ -131,15 +118,12 @@ class HirlLinter {
                         severity = vscode.DiagnosticSeverity.Warning;
                     }
 
-                    // Check if the line contained an error information
-                    // Hint severity is used as "no error" here
                     if (severity !== vscode.DiagnosticSeverity.Hint)
                     {
                         compilerMessage.labels.forEach((label: messageLabel) => {
                             let startPosition = doc.positionAt(label.span.offset);
                             let endPosition = doc.positionAt(label.span.offset + label.span.length);
 
-                            // Create a diagnostic message
                             let where = new vscode.Range(
                                 startPosition.line,
                                 startPosition.character,
@@ -169,32 +153,27 @@ class HirlLinter {
     }
 }
 
-// Controls the HirlLinter class
 class HirlLinterController
 {
     private _linter: HirlLinter;
     private _disposable: vscode.Disposable;
 
-    // Creates a new linter controller
     constructor(linter: HirlLinter)
     {
         this._linter = linter;
 
         let subscriptions: vscode.Disposable[] = [];
 
-        // Linter triggers
         vscode.workspace.onDidOpenTextDocument(this.lintTrigger, this, subscriptions);
         vscode.workspace.onDidSaveTextDocument(this.lintTrigger, this, subscriptions);
 
         this._disposable = vscode.Disposable.from(...subscriptions);
     }
 
-    // Dispose method
     dispose() {
         this._disposable.dispose();
     }
 
-    // Executed whenever linting shall be done
     private lintTrigger() {
         let editor = vscode.window.activeTextEditor;
         if (editor) {
