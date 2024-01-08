@@ -1,183 +1,207 @@
-'use strict';
-import * as vscode from 'vscode';
-import * as cp from 'child_process';
+"use strict";
+import * as vscode from "vscode";
+import * as cp from "child_process";
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log("HIRL extension is now active");
+  console.log("HIRL extension is now active");
 
-    let linter = new HirlLinter();
-    let linterController = new HirlLinterController(linter);
+  let linter = new HirlLinter();
+  let linterController = new HirlLinterController(linter);
 
-    context.subscriptions.push(linter);
-    context.subscriptions.push(linterController);
+  context.subscriptions.push(linter);
+  context.subscriptions.push(linterController);
 
-    vscode.languages.registerDocumentFormattingEditProvider('hirl', {
-    provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
-            let edits: vscode.TextEdit[] = [];
-            
-            const config = vscode.workspace.getConfiguration("hirl-extension");
-            const tabSize = config.tabSize != null ? config.tabSize : 2;
+  vscode.languages.registerDocumentFormattingEditProvider("hirl", {
+    provideDocumentFormattingEdits(
+      document: vscode.TextDocument
+    ): vscode.TextEdit[] {
+      let edits: vscode.TextEdit[] = [];
 
-            let indentationLevel = 0;
-            let isCommented: boolean = false;
+      const config = vscode.workspace.getConfiguration("hirl-extension");
+      const tabSize = config.tabSize != null ? config.tabSize : 2;
 
-            for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
-                const line = document.lineAt(lineIndex);
+      let indentationLevel = 0;
+      let isCommented: boolean = false;
 
-                if (line.text.includes('/*')) {
-                    isCommented = true;
-                }
-                if (line.text.includes('*/')) {
-                    isCommented = false;
-                }
-                if (isCommented) continue;
+      for (let lineIndex = 0; lineIndex < document.lineCount; lineIndex++) {
+        const line = document.lineAt(lineIndex);
 
-                let desiredIndentation = ' '.repeat(tabSize * indentationLevel);
-
-                const openBracketCount = (line.text.match(/[({[]/g) || []).length;
-                const closeBracketCount = (line.text.match(/[)}\]]/g) || []).length;
-                const bracketBalance = openBracketCount - closeBracketCount;
-
-                indentationLevel += bracketBalance;
-
-                const trimmedLine = line.text.trim();
-            
-                if (trimmedLine.replace(new RegExp('\\)', 'g'), '')
-                    .replace(new RegExp('\\}', 'g'), '')
-                    .replace(new RegExp('\\]', 'g'), '')
-                    .replace(new RegExp('\\;', 'g'), '') === '') {
-                    desiredIndentation = desiredIndentation.substring(0, desiredIndentation.length - tabSize);
-                }
-                const editText = desiredIndentation + trimmedLine;
-
-                const editRange = new vscode.Range(lineIndex, 0, lineIndex, line.text.length);
-                const edit = vscode.TextEdit.replace(editRange, editText);
-                edits.push(edit);
-            }
-
-            return edits;
+        if (line.text.includes("/*")) {
+          isCommented = true;
         }
-    });
+        if (line.text.includes("*/")) {
+          isCommented = false;
+        }
+        if (isCommented) continue;
 
+        let desiredIndentation = " ".repeat(tabSize * indentationLevel);
+
+        const openBracketCount = (line.text.match(/[({[]/g) || []).length;
+        const closeBracketCount = (line.text.match(/[)}\]]/g) || []).length;
+        const bracketBalance = openBracketCount - closeBracketCount;
+
+        indentationLevel += bracketBalance;
+
+        const trimmedLine = line.text.trim();
+
+        if (
+          trimmedLine
+            .replace(new RegExp("\\)", "g"), "")
+            .replace(new RegExp("\\}", "g"), "")
+            .replace(new RegExp("\\]", "g"), "")
+            .replace(new RegExp("\\;", "g"), "") === ""
+        ) {
+          desiredIndentation = desiredIndentation.substring(
+            0,
+            desiredIndentation.length - tabSize
+          );
+        }
+        const editText = desiredIndentation + trimmedLine;
+
+        const editRange = new vscode.Range(
+          lineIndex,
+          0,
+          lineIndex,
+          line.text.length
+        );
+        const edit = vscode.TextEdit.replace(editRange, editText);
+        edits.push(edit);
+      }
+
+      return edits;
+    },
+  });
 }
 
-export function deactivate() { }
+export function deactivate() {}
 
 interface messageLabel {
-    label: string;
-    span: {
-        offset: number;
-        length: number;
-    };
+  label: string;
+  span: {
+    offset: number;
+    length: number;
+  };
 }
 
 class HirlLinter {
-    private diagnosticsCollection: vscode.DiagnosticCollection;
+  private diagnosticsCollection: vscode.DiagnosticCollection;
 
-    constructor() {
-        this.diagnosticsCollection = vscode.languages.createDiagnosticCollection();
+  constructor() {
+    this.diagnosticsCollection = vscode.languages.createDiagnosticCollection();
+  }
+
+  public lint(doc: vscode.TextDocument) {
+    if (doc.languageId !== "hirl") return;
+
+    const config = vscode.workspace.getConfiguration("hirl-extension");
+    if (config.compilerPath === null || config.compilerPath === "") {
+      vscode.window.showErrorMessage(
+        "HIRL Extension: hirl-extension.compilerPath must be set!"
+      );
+      return;
     }
 
-    public lint(doc: vscode.TextDocument) {
-        if (doc.languageId !== "hirl") return;
+    let diagnostics: vscode.Diagnostic[] = [];
 
-        const config = vscode.workspace.getConfiguration("hirl-extension");
-        if (config.compilerPath === null || config.compilerPath === "") {
-            vscode.window.showErrorMessage( "HIRL Extension: hirl-extension.compilerPath must be set!" );
-            return;
-        }
+    let compilerArguments = ["-o output.sv", "--json-report", doc.fileName];
 
-        let diagnostics: vscode.Diagnostic[] = [];
+    let compilerProcess = cp.spawn(config.compilerPath, compilerArguments, {});
 
-        let compilerArguments = ["--json-report", doc.fileName];
+    if (compilerProcess.pid) {
+      let compilerOutput = "";
+      compilerProcess.stdout.on(
+        "data",
+        (data: Buffer) => (compilerOutput += data)
+      );
 
-        let compilerProcess = cp.spawn(
-            config.compilerPath,
-            compilerArguments,
-            {}
-        );
+      compilerProcess.stdout.on("close", () => {
+        let compilerMessages = compilerOutput
+          .toString()
+          .split("\n")
+          .filter((message) => message.length > 0)
+          .map((message) => JSON.parse(message));
 
-        if (compilerProcess.pid)
-        {
-            let compilerOutput = "";
-            compilerProcess.stdout.on("data", (data: Buffer) => compilerOutput += data);
+        compilerMessages.forEach((compilerMessage) => {
+          let severity: vscode.DiagnosticSeverity =
+            vscode.DiagnosticSeverity.Hint;
+          if (compilerMessage.severity === "error") {
+            severity = vscode.DiagnosticSeverity.Error;
+          } else if (compilerMessage.severity === "warning") {
+            severity = vscode.DiagnosticSeverity.Warning;
+          }
 
-            compilerProcess.stdout.on("close", () =>
-            {
-                let compilerMessages = compilerOutput.toString()
-                    .split('\n').filter((message) => message.length > 0)
-                    .map((message) => JSON.parse(message));
+          if (severity !== vscode.DiagnosticSeverity.Hint) {
+            compilerMessage.labels.forEach((label: messageLabel) => {
+              let startPosition = doc.positionAt(label.span.offset);
+              let endPosition = doc.positionAt(
+                label.span.offset + label.span.length
+              );
 
-                compilerMessages.forEach(compilerMessage =>
-                {
-                    let severity : vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Hint;
-                    if (compilerMessage.severity === "error") {
-                        severity = vscode.DiagnosticSeverity.Error;
-                    }
-                    else if (compilerMessage.severity === "warning") {
-                        severity = vscode.DiagnosticSeverity.Warning;
-                    }
+              let where = new vscode.Range(
+                startPosition.line,
+                startPosition.character,
+                endPosition.line,
+                endPosition.character
+              );
 
-                    if (severity !== vscode.DiagnosticSeverity.Hint)
-                    {
-                        compilerMessage.labels.forEach((label: messageLabel) => {
-                            let startPosition = doc.positionAt(label.span.offset);
-                            let endPosition = doc.positionAt(label.span.offset + label.span.length);
-
-                            let where = new vscode.Range(
-                                startPosition.line,
-                                startPosition.character,
-                                endPosition.line,
-                                endPosition.character
-                            );
-    
-                            let diag = new vscode.Diagnostic(where, compilerMessage.message + "\n" + label.label, severity);
-                            diagnostics.push(diag);
-                        });
-                    }
-                });
-
-                // After the output is processed, push the new diagnostics to collection
-                this.diagnosticsCollection.set(doc.uri, diagnostics);
+              let diag = new vscode.Diagnostic(
+                where,
+                compilerMessage.message + "\n" + label.label,
+                severity
+              );
+              diagnostics.push(diag);
             });
-        }
-        else {
-            vscode.window.showErrorMessage("HIRL Extension: failed to run HIRL compiler!");
-            return;
-        }
-    }
+          }
+        });
 
-    dispose() {
-        this.diagnosticsCollection.clear();
-        this.diagnosticsCollection.dispose();
+        // After the output is processed, push the new diagnostics to collection
+        this.diagnosticsCollection.set(doc.uri, diagnostics);
+      });
+    } else {
+      vscode.window.showErrorMessage(
+        "HIRL Extension: failed to run HIRL compiler!"
+      );
+      return;
     }
+  }
+
+  dispose() {
+    this.diagnosticsCollection.clear();
+    this.diagnosticsCollection.dispose();
+  }
 }
 
-class HirlLinterController
-{
-    private _linter: HirlLinter;
-    private _disposable: vscode.Disposable;
+class HirlLinterController {
+  private _linter: HirlLinter;
+  private _disposable: vscode.Disposable;
 
-    constructor(linter: HirlLinter)
-    {
-        this._linter = linter;
+  constructor(linter: HirlLinter) {
+    this._linter = linter;
 
-        let subscriptions: vscode.Disposable[] = [];
+    let subscriptions: vscode.Disposable[] = [];
 
-        vscode.workspace.onDidOpenTextDocument(this.lintTrigger, this, subscriptions);
-        vscode.workspace.onDidSaveTextDocument(this.lintTrigger, this, subscriptions);
+    vscode.workspace.onDidOpenTextDocument(
+      this.lintTrigger,
+      this,
+      subscriptions
+    );
+    vscode.workspace.onDidSaveTextDocument(
+      this.lintTrigger,
+      this,
+      subscriptions
+    );
 
-        this._disposable = vscode.Disposable.from(...subscriptions);
+    this._disposable = vscode.Disposable.from(...subscriptions);
+  }
+
+  dispose() {
+    this._disposable.dispose();
+  }
+
+  private lintTrigger() {
+    let editor = vscode.window.activeTextEditor;
+    if (editor) {
+      this._linter.lint(editor.document);
     }
-
-    dispose() {
-        this._disposable.dispose();
-    }
-
-    private lintTrigger() {
-        let editor = vscode.window.activeTextEditor;
-        if (editor) {
-            this._linter.lint(editor.document);
-        }
-    }
+  }
 }

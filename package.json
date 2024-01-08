@@ -54,6 +54,12 @@
                 "scopeName": "source.hirl",
                 "path": "./syntaxes/hirl.tmLanguage.json"
             }
+        ],
+        "snippets": [
+            {
+                "language": "hirl",
+                "path": "./snippets.json"
+            }
         ]
     },
     "scripts": {

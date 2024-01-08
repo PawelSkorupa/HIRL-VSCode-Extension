@@ -1,0 +1,16 @@
+{
+  "Module and implementation": {
+    "scope": "hirl",
+		"prefix": "mi",
+		"body": [
+			"module ${1:module1} {",
+      "\t",
+      "}",
+      "",
+      "impl ${1:module1} {",
+      "\t",
+      "}"
+		],
+		"description": "Inserts template for a module and its implementation."
+	}
+}
