@@ -17,9 +17,9 @@ export function provideCompletions(
   const linePrefix = document
     .lineAt(position)
     .text.slice(0, position.character);
-  const isAfterTypeKeyword = types.some((type) =>
-    linePrefix.endsWith(type + " ")
-  );
+  const isAfterTypeKeyword = types
+    .filter((type) => type === "input" || type === "output")
+    .some((type) => linePrefix.endsWith(type + " "));
 
   if (isAfterTypeKeyword) {
     const modifierCompletions = typeModifiers.map((modifier) => {
@@ -49,6 +49,14 @@ export function provideCompletions(
     const controlKeywordCompletions = controlKeywords.map((keyword) => {
       const completion = new vscode.CompletionItem(
         keyword,
+        vscode.CompletionItemKind.Keyword
+      );
+      return completion;
+    });
+
+    const modifierCompletions = typeModifiers.map((modifier) => {
+      const completion = new vscode.CompletionItem(
+        modifier,
         vscode.CompletionItemKind.Keyword
       );
       return completion;
@@ -91,6 +99,7 @@ export function provideCompletions(
 
     return [
       ...typeCompletions,
+      ...modifierCompletions,
       ...controlKeywordCompletions,
       ...functionCompletions,
       ...illegalCompletions,
