@@ -12,5 +12,15 @@
       "}"
 		],
 		"description": "Inserts template for a module and its implementation."
+	},
+  "For loop": {
+    "scope": "hirl",
+		"prefix": "for",
+		"body": [
+			"for (${1:i} in [${2:0}:${3:10}]) {",
+      "\t",
+      "}"
+		],
+		"description": "Inserts a scaffolding for a for loop."
 	}
 }
