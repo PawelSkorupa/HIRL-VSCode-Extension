@@ -1,7 +1,9 @@
 "use strict";
 import * as vscode from "vscode";
 
-export function formatter(document: vscode.TextDocument): vscode.TextEdit[] {
+export function formatDocument(
+  document: vscode.TextDocument
+): vscode.TextEdit[] {
   let edits: vscode.TextEdit[] = [];
 
   const config = vscode.workspace.getConfiguration("hirl-extension");
