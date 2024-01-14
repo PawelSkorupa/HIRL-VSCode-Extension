@@ -2,7 +2,7 @@
     "name": "vscode-hirl-extension",
     "displayName": "HIRL Extension",
     "description": "Provides some language extension capabilities for HIRL",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "publisher": "pawesko169",
     "engines": {
         "vscode": "^1.28.0"
