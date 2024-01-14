@@ -81,7 +81,6 @@ export class HirlLinter {
           }
         });
 
-        // After the output is processed, push the new diagnostics to collection
         this.diagnosticsCollection.set(doc.uri, diagnostics);
       });
     } else {
